@@ -49,3 +49,126 @@ write(
 );
 ```
 - No format conversion or user-space buffering
+
+### read() - unbuffered input
+```c
+read(
+	fd,
+	buffer,
+	count
+);
+```
+- Raw binary, count should not be bigger than buffer
+- read returns 0 on EOF (end-of-file)
+
+### close()
+```c
+close(fd)
+```
+- closes and makes availiable for reuse
+- descriptors implicitly closed when process terminates
+- closing is good practice, and essential in long-running process
+- **there's a limit on how many descriptors a process can have open**
+
+## Random Access
+### lseek()
+- All of the above commands deal with sequential access
+- File pointers will always begin at the beginning, unless the flag is set to `O_APPEND`
+- more info: man 3 lseek
+```c
+lseek(
+	fd,
+	offset,	// byte offset, positive or negative
+	whence	// offset relative to: SEEK_SET (start of file), SEEK_CUR (current), SEEK_END (EOF)
+);
+
+// examples:
+lseek(fd, 100, SEEK_CUR);  // Start at the current position in file, and writes 100 bytes
+lseek(fd, 100, SEEK_SET);  // Start at beginning of file, and writes 100 bytes
+lseek(fd, -100, SEEK_END);  // Start at end of file, writes 100 bytes backwards
+
+lseek(fd, 100, SEEK_END);  // File is conceptually extended but nothing changed on disk, until it's written to will 
+```
+
+## Buffered and formatted IO
+- C lang doesn't define any features to handle IO, library evolved: "standard io library"
+
+```c
+fd = fopen( // fopen
+    name,   // Pathname
+    mode    // string: "r", "W", "r+", "b" (important for Windows)
+);
+// fd returns a pointer to a file: * FILE
+// returns a null pointer on error
+
+/* Output */
+fwrite(		// Returns number of elements actually written
+	buffer,
+	size,
+	num,	// number of objects
+	fd);	// FILE * descriptor returned by fopen()
+
+/* Input */
+fread(		// returns number of elements actually read
+	buffer,
+	size,
+	num,	// number of objects
+	fd);	// FILE *
+
+/* Closing */
+fclose(fd);	// closes descriptor, flushes buffered data.. But again, limit on how many descriptors a ps can have open, so best practice to close file-descriptor when done
+```
+
+
+### Difference between low-level IO and standard library
+
+Feature	| Low-Level IO | Standard Lib
+--- | --- | ---
+Read/write access | `open(), close(), read(), write()`	| `fopen(), fclose(), fread(), fwrite()`
+Random Access | `lseek()` | `fseek()`
+Type of descriptor | `int` | FILE *
+User-space buffering? | No | Yes
+Part of C Standard? | No | Yes
+
+- **Does not dive into the kernel every time it's called. Instead, output is accumulated into a buffer, and then finally makes the kernel call to write**
+- by timing `rawio.c`'s output to a file by using low-level calls, we demonstrate that most time is spent in kernel space
+- The same routine with using standard library (ie, buffered IO) is **much** faster and occurs entirely in
+- There's a heavy overhead involved in making a system call. Thus, you want to buffer up your calls to the kernel if you can.
+
+### printf() and friends
+- Generates a formatted string and writes to `stdout` (fd==1)
+
+```c
+// printf example
+char *name = "Sharon";
+int age = 45;
+double wage = 24500.00;
+printf("%12s is a %d and earns %f\n", name, age, wage);
+```
+
+
+**printf() format codes** |  |
+--- | --- |
+`%d` | decimal integer
+`%8d` | right-justified in 8 character field
+`%-8d` | left-justified in 8 character field
+`%s` | string
+`%12.3f` | double in 12 characater field width w/ 3 digits after decimal 
+
+- `man 3 printf` for more info
+
+#### fprintf() and sprintf()
+```c
+fd = fopen(...);
+fprintf( //
+	fd,	// Use stderr to output error message
+	"hello world");
+
+char[100] buf;
+sprintf(	// Formats string into memory, used often with GUI apps to output to text box or building an SQL query
+	buf,
+	"Hello");
+// Again, be careful about not overflowing the bfufer
+// Can also use snprintf() to specify number of bytes
+```
+
