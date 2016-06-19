@@ -172,3 +172,34 @@ sprintf(	// Formats string into memory, used often with GUI apps to output to te
 // Can also use snprintf() to specify number of bytes
 ```
 
+### Scatter / Gather IO
+- implemented in *readv()* and *writev()*
+- Gathers and writes to file in one atomic operation
+
+```c
+ssize_t writev(		/* Data written atomically to the file, buffers
+					guarenteed to end up sequential, even if
+					another process is concurrently appending data to file */
+	int fildes,		// file descriptor
+	const struct iovec *iov, /* Points to array of IOVec structures (iov_base + iov_len) */
+	int iocount // length of the array
+);
+```
+
+### Mapping Files into Memory: mmap()
+
+```c
+void mmap(
+	void *addr,	// set to NULL to allow kernel to choose address
+	size_t len,	// length of mapping
+	int prot,	// Some combination of PROT_READ and PROT_WRITE
+	int flags,	// MAP_SHARED, MAP_PRIVATE (if other processes can see this)
+	int fildes,		// File descriptor from open()
+	off_t offset	// multiple of page size (often 0)
+);
+
+/* mmap returns the address where the file has been mapped
+a lot like malloc() */
+```
+
+- see [mmcopy.c](./2-accessing-files/mmcopy.c) for an example.
