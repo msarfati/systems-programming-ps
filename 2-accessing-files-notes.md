@@ -1,4 +1,4 @@
-# Notes
+# Chapter 2: Accesssing Files
 
 ## Man pages
 - Section 3 of `man` will open info about **library calls**
